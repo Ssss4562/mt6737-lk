@@ -3,6 +3,12 @@
 
 #include<cust_kpd.h>
 
+/* CT07 keypad has no volume keys: enter recovery by holding digit "8".
+ * HW keycode 23 = matrix position of KEY_8 in kpd-hw-init-map.
+ * (Generated cust_kpd.h points RECOVERY_KEY at empty position 17.) */
+#undef MT65XX_RECOVERY_KEY
+#define MT65XX_RECOVERY_KEY      23     /* KEY_8 */
+
 #define MT65XX_META_KEY		42	/* KEY_2 */
 /* MTK_PMIC_RST_KEY is defined in cust_kpd.h */
 #define MT_CAMERA_KEY 		9

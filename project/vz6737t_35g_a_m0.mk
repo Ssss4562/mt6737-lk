@@ -14,7 +14,7 @@ endif
 DEFINES += MTK_NEW_COMBO_EMMC_SUPPORT
 MTK_KERNEL_POWER_OFF_CHARGING = yes
 MTK_LCM_PHYSICAL_ROTATION = 0
-CUSTOM_LK_LCM="r63417_fhd_dsi_cmd_truly_nt50358_qhd"
+CUSTOM_LK_LCM="ili9341_mz2d4n511_a_ctc_spi_qvga nv3029g_tianyifu_c5030_boe_spi_qvga_gai"
 #hx8392a_dsi_cmd = yes
 
 #FASTBOOT_USE_G_ORIGINAL_PROTOCOL = yes

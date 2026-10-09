@@ -178,6 +178,20 @@ static void display_info(const char* msg)
 	if (msg == 0) {
 		return;
 	}
+	/* CT07: mirror to the SPI panel (cfb console is invisible here). */
+	{
+		extern void ct07_draw_text(unsigned int row, const char *s,
+					   unsigned short fg, unsigned short bg);
+		char buf[41];
+		unsigned int i = 0, j = 0;
+		while (msg[i] == '\n' || msg[i] == '\r')
+			i++;
+		while (j < 40 && msg[i] && msg[i] != '\n' && msg[i] != '\r')
+			buf[j++] = msg[i++];
+		buf[j] = 0;
+		if (j)
+			ct07_draw_text(20, buf, 0xFFFF, 0x0000);
+	}
 	video_printf("%s\n", msg);
 #endif
 }
@@ -200,6 +214,30 @@ static void display_progress(const char* msg_prefix, unsigned size, unsigned tot
 	}
 	if (totle_size != 0) {
 		prog = (u64)size*100/totle_size;
+	}
+	/* CT07: progress on the SPI panel, throttled to 5% steps. */
+	{
+		extern void ct07_draw_text(unsigned int row, const char *s,
+					   unsigned short fg, unsigned short bg);
+		static unsigned ct07_last_pct = 9999;
+		unsigned p = (unsigned)prog;
+		char b[12];
+		int k = 0;
+		if (p > 100)
+			p = 100;
+		if (p / 5 != ct07_last_pct / 5) {
+			ct07_last_pct = p;
+			b[k++] = 'W'; b[k++] = 'R'; b[k++] = ' ';
+			if (p >= 100) {
+				b[k++] = '1'; b[k++] = '0'; b[k++] = '0';
+			} else {
+				if (p >= 10)
+					b[k++] = '0' + p / 10;
+				b[k++] = '0' + p % 10;
+			}
+			b[k++] = '%'; b[k] = 0;
+			ct07_draw_text(21, b, 0xFFFF, 0x0000);
+		}
 	}
 	video_printf("%s > %3d%% Time:%4ds Vel:%5dKB/s", msg_prefix, (unsigned)prog, time, vel);
 #endif

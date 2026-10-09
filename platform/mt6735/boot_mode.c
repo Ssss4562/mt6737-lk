@@ -38,6 +38,7 @@
 #include <platform/mt_rtc.h>
 #include <platform/mtk_key.h>
 #include <platform/mt_gpt.h>
+#include <platform/timer.h>
 #include <platform/mtk_wdt.h>
 #include <platform/mt_leds.h>
 
@@ -80,6 +81,15 @@ static int mrdump_check(void)
 
 void boot_mode_select(void)
 {
+/* CT07 keypad bring-up (same values as the 3.18 kpd probe):
+ * INFRA KP gate CLR (INFRACFG_AO @0x10000000 + 0x44, bit 16),
+ * debounce 0x400, KP_EN = 1. Stock relies on POR state; we set
+ * the known-good state explicitly (idempotent, kernel repeats it).
+ * Detection window 3s (was 50ms). */
+    *(volatile unsigned int *)0x10000044 = (1U << 16);
+    *(volatile unsigned short *)0x10003018 = 0x400;
+    *(volatile unsigned short *)0x10003024 = 0x1;
+
     int factory_forbidden = 0;
     //  int forbid_mode;
     /*We put conditions here to filer some cases that can not do key detection*/
@@ -232,8 +242,30 @@ void boot_mode_select(void)
         return TRUE;
     }
     ulong begin = get_timer(0);
+/* CT07 visible recovery window (SPI panel has no other UI). */
+    {
+        extern void ct07_draw_text(unsigned int row, const char *s,
+				   unsigned short fg, unsigned short bg);
+        ct07_draw_text(6, "HOLD 2 = RECOVERY", 0xFFFF, 0x0000);
+    }
+    int ct07_keyshown = -1;
 /*we put key dectection here to detect key which is pressed*/
-while(get_timer(begin)<50){
+/* CT07: 3000ms window (button phone, no volume keys to time it). */
+while(get_timer(begin)<3000){
+    {
+        extern void ct07_draw_text(unsigned int row, const char *s,
+				   unsigned short fg, unsigned short bg);
+        int any = 0;
+        static const unsigned char ct07_mon[] = {17, 18, 1, 10, 19, 37};
+        unsigned int k;
+        for (k = 0; k < sizeof(ct07_mon); k++)
+            if (mtk_detect_key(ct07_mon[k])) { any = 1; break; }
+        if (any != ct07_keyshown) {
+            ct07_keyshown = any;
+            ct07_draw_text(7, any ? "KEY SEEN" : "WAITING KEY",
+			   any ? 0x07E0 : 0xF800, 0x0000);
+        }
+    }
 #ifdef MTK_FASTBOOT_SUPPORT
     if(mtk_detect_key(MT_CAMERA_KEY))
     {
@@ -262,6 +294,51 @@ while(get_timer(begin)<50){
              return TRUE;
          }
 #endif
+        /* CT07: stock LK checks HW 17 (PMIC home) and 18 (matrix) here
+         * (verified by disassembly). Match it, plus the live column-1
+         * keys (HW 1,10,19,37) as fallback for the damaged matrix. */
+        {
+            static const unsigned char ct07_rec_keys[] = {17, 18, 1, 10, 19, 37};
+            unsigned int ri;
+            for (ri = 0; ri < sizeof(ct07_rec_keys); ri++) {
+                if (mtk_detect_key(ct07_rec_keys[ri])) {
+                    extern void ct07_draw_text(unsigned int row, const char *s,
+						   unsigned short fg, unsigned short bg);
+                    dprintf(INFO, "CT07 rec key %u\n", ct07_rec_keys[ri]);
+                    ct07_draw_text(7, "GO RECOVERY", 0x07E0, 0x0000);
+                    mdelay(400);
+                    g_boot_mode = RECOVERY_BOOT;
+                    return TRUE;
+                }
+            }
+        }
+
+/* CT07 keypad-matrix debug. Display is already up (white) here.
+ * Runs only when any key is held at boot, otherwise boot stays fast.
+ * Cycles HW positions 0..71 on a 24x24 rect at (0,0): GREEN = pressed,
+ * RED = released. Hold ONE key from power-on, count seconds from the
+ * BLUE flash to GREEN: position ~= seconds / 0.25. Multiple GREEN
+ * flashes per cycle = shorted matrix rows (several bits at once). */
+{
+    int i, any = 0;
+    extern void ct07_dbg_rect(unsigned int x, unsigned int y,
+                              unsigned int w, unsigned int h,
+                              unsigned short color);
+    for (i = 0; i < 72; i++) {
+        if (mtk_detect_key(i)) { any = 1; break; }
+    }
+    if (any) {
+        ct07_dbg_rect(0, 0, 24, 24, 0x001F); /* blue: scan starts */
+        mdelay(1000);
+        for (i = 0; i < 72; i++) {
+            extern void mtk_wdt_restart(void);
+            ct07_dbg_rect(0, 0, 24, 24,
+                          mtk_detect_key(i) ? 0x07E0 : 0xF800);
+            mdelay(250);
+            mtk_wdt_restart();
+        }
+        ct07_dbg_rect(0, 0, 24, 24, 0xFFFF); /* white: scan done */
+    }
 }
 
 #endif

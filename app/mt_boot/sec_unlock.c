@@ -231,10 +231,27 @@ int fastboot_oem_unlock(const char *arg, void *data, unsigned sz)
 	int ret = B_OK;
 	char msg[128] = {0};
 	unsigned int unlock_allowed = 0;
+	ulong ct07_unlock_t0 = get_timer(0);
 
 	unlock_warranty();
 
+	/* CT07 visible prompt (no volume keys, 240x320 SPI panel):
+	 * YES = hold "2" (any live column-1 key), NO = 30s idle. */
+	{
+		extern void ct07_draw_text(unsigned int row, const char *s,
+					   unsigned short fg, unsigned short bg);
+		ct07_draw_text(8, "UNLOCK BOOTLOADER?", 0xFFFF, 0x0000);
+		ct07_draw_text(10, "HOLD 2 = YES", 0xFFFF, 0x0000);
+		ct07_draw_text(11, "30S IDLE = NO", 0xFFFF, 0x0000);
+	}
+
 	while (1) {
+		if (get_timer(ct07_unlock_t0) > 30000) {
+			video_printf("timeout, unlock aborted\n");
+			fastboot_boot_menu();
+			fastboot_okay("");
+			break;
+		}
 		if (mtk_detect_key(MT65XX_MENU_SELECT_KEY)) { //VOL_UP
 			fastboot_info("Start unlock flow\n");
 			//Invoke security check after confirming "yes" by user

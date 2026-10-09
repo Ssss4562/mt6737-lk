@@ -328,6 +328,17 @@ void mt_disp_update(UINT32 x, UINT32 y, UINT32 width, UINT32 height)
 		mdelay(30);
 	}
 
+	/* CT07 SPI panel: push the DRAM framebuffer. The DSI trigger above
+	 * goes nowhere on this board. */
+	{
+		extern void ct07_push_fb(unsigned int *fb, unsigned int pitch_words,
+					 unsigned int x, unsigned int y,
+					 unsigned int w, unsigned int h);
+		ct07_push_fb((unsigned int *)fb_addr,
+			     ALIGN_TO(CFG_DISPLAY_WIDTH, MTK_FB_ALIGNMENT),
+			     x, y, width, height);
+	}
+
 	/*
 	    // TODO: Fixit!!!!!
 	    if(fb_isdirty)

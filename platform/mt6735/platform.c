@@ -686,6 +686,20 @@ void platform_init(void)
 #ifdef LK_PROFILING
 	dprintf(INFO, "[PROFILE] ------- boot mode select takes %d ms -------- \n", (int)get_timer(time_boot_mode));
 #endif
+
+	/* CT07: orange-state warning on the SPI panel (unlocked bootloader).
+	 * Later screens (logo/fastboot/kernel) draw over it. */
+	{
+		extern void ct07_draw_text(unsigned int row, const char *s,
+					   unsigned short fg, unsigned short bg);
+		ulong t0 = get_timer(0);
+		ct07_draw_text(0, "ORANGE STATE", 0xFC00, 0x0000);
+		ct07_draw_text(1, "software cannot be verified", 0xFC00, 0x0000);
+		ct07_draw_text(2, "bootloader unlocked", 0xFC00, 0x0000);
+		ct07_draw_text(3, "HOLD 2 = RECOVERY", 0xFFFF, 0x0000);
+		while (get_timer(t0) < 2000)
+			;
+	}
 #endif
 
 

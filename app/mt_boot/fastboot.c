@@ -259,6 +259,13 @@ static void fastboot_command_loop(void)
 	int r;
 	dprintf(ALWAYS,"fastboot: processing commands\n");
 
+	/* CT07 SPI panel: show fastboot state (no logo/text engine otherwise). */
+	{
+		extern void ct07_draw_text(unsigned int row, const char *s,
+					   unsigned short fg, unsigned short bg);
+		ct07_draw_text(2, "FASTBOOT MODE", 0xFFFF, 0x0000);
+	}
+
 again:
 	while (fastboot_state != STATE_ERROR) {
 		memset(buffer, 0, sizeof(buffer));

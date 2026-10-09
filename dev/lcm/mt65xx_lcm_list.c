@@ -278,6 +278,8 @@ extern LCM_DRIVER cpt_clap070wp03xg_wxga_lvds_lcm_drv;
 extern LCM_DRIVER b080uan01_2_wuxga_dsi_vdo_lcm_drv;
 extern LCM_DRIVER otm1902a_fhd_dsi_cmd_tianma_lcm_drv;
 extern LCM_DRIVER nt35695_fhd_dsi_cmd_yassy_lcm_drv;
+extern LCM_DRIVER ili9341_mz2d4n511_a_ctc_spi_qvga_lcm_drv;
+extern LCM_DRIVER nv3029g_tianyifu_c5030_boe_spi_qvga_gai_lcm_drv;
 #endif
 
 LCM_DRIVER *lcm_driver_list[] = {
@@ -1197,6 +1199,14 @@ LCM_DRIVER *lcm_driver_list[] = {
 #if defined(B080UAN01_2_WUXGA_DSI_VDO)
 	&b080uan01_2_wuxga_dsi_vdo_lcm_drv,
 #endif
+
+#if defined(ILI9341_MZ2D4N511_A_CTC_SPI_QVGA)
+	&ili9341_mz2d4n511_a_ctc_spi_qvga_lcm_drv,
+#endif
+
+#if defined(NV3029G_TIANYIFU_C5030_BOE_SPI_QVGA_GAI)
+	&nv3029g_tianyifu_c5030_boe_spi_qvga_gai_lcm_drv,
+#endif
 #endif
 };
 
@@ -1232,6 +1242,14 @@ unsigned char lcm_name_list[][128] = {
 
 #if defined(R63417_FHD_DSI_VDO_TRULY_NT50358)
 	"r63417_fhd_dsi_vdo_truly_nt50358_drv",
+#endif
+
+#if defined(ILI9341_MZ2D4N511_A_CTC_SPI_QVGA)
+	"ili9341_mz2d4n511_a_ctc_spi_qvga_drv",
+#endif
+
+#if defined(NV3029G_TIANYIFU_C5030_BOE_SPI_QVGA_GAI)
+	"nv3029g_tianyifu_c5030_boe_spi_qvga_gai_drv",
 #endif
 };
 #endif
